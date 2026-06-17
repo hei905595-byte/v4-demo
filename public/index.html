@@ -19,15 +19,8 @@ let signer;
 async function connect() {
   let accounts;
   try {
-    // 区分TP钱包和通用MetaMask类钱包
-    if (window.tp && window.tp.isTokenPocket) {
-      // TP钱包专用逻辑
-      accounts = await window.tp.request({
-        method: "eth_requestAccounts"
-      });
-      provider = new ethers.providers.Web3Provider(window.tp);
-    } else if (window.ethereum && window.ethereum.request) {
-      // 普通以太坊钱包
+    // 先判断标准以太坊注入对象，TP浏览器会自动注入window.ethereum
+    if (window.ethereum && window.ethereum.request) {
       accounts = await window.ethereum.request({
         method: "eth_requestAccounts"
       });
@@ -37,7 +30,6 @@ async function connect() {
       return;
     }
 
-    // 必须请求授权，获取签名者
     await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
     const userAddr = await signer.getAddress();
