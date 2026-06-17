@@ -17,10 +17,26 @@ let provider;
 let signer;
 
 async function connect() {
-  if (!window.ethereum) {
+
+  // ❗不要直接拦死
+  if (!window.ethereum && !window.tp && !window.web3) {
     alert("请用TP或MetaMask打开");
     return;
   }
+
+  const provider = window.ethereum || window.tp || window.web3;
+
+  try {
+    const accounts = await provider.request({
+      method: "eth_requestAccounts"
+    });
+
+    alert("连接成功: " + accounts[0]);
+
+  } catch (e) {
+    alert("连接失败");
+  }
+}
 
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
