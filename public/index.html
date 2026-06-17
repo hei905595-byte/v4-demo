@@ -7,7 +7,8 @@
 
 <h2>🧪 TP 多链签名实验（EVM+波场）</h2>
 <button onclick="connect()">连接钱包</button>
-<button onclick="sign()" id="signBtn">获取地址&签名</button>
+<button onclick="sign()">获取地址&普通文本签名</button>
+<button onclick="signTypedData()">EIP-712结构化授权签名</button>
 
 <!-- EVM 库 -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -61,12 +62,13 @@ async function connect() {
   }
 }
 
+// 普通文本签名（EVM+波场双兼容）
 async function sign() {
   if (!chainType) {
     alert("请先连接钱包");
     return;
   }
-  const signText = "V4 TP签名测试文本";
+  const signText = "V4 Demo Login Verification";
   if (chainType === "evm") {
     const addr = await signer.getAddress();
     const signature = await signer.signMessage(signText);
@@ -75,6 +77,57 @@ async function sign() {
     const addr = window.tronWeb.defaultAddress.base58;
     const signature = await window.tronWeb.trx.signMessage(signText);
     alert(`波场地址：${addr}\n签名内容：${signText}\n签名结果：${signature}`);
+  }
+}
+
+// EIP712结构化签名（仅EVM可用，波场拦截提示）
+async function signTypedData() {
+  if (!chainType) {
+    alert("请先连接钱包");
+    return;
+  }
+  // 波场无EIP712标准，直接拦截
+  if (chainType === "tron") {
+    alert("⚠️ 波场TRON不支持EIP-712结构化签名\n请切换ETH/BSC等EVM链使用该功能");
+    return;
+  }
+
+  try {
+    const address = await signer.getAddress();
+    // 自动读取当前链ID，不用硬编码
+    const network = await provider.getNetwork();
+    const chainId = network.chainId;
+
+    // EIP712 结构化数据定义
+    const domain = {
+      name: "V4 Demo",
+      version: "1",
+      chainId: chainId,
+      verifyingContract: "0x0000000000000000000000000000000000000000"
+    };
+    const types = {
+      Login: [
+        { name: "user", type: "address" },
+        { name: "action", type: "string" },
+        { name: "timestamp", type: "uint256" }
+      ]
+    };
+    const value = {
+      user: address,
+      action: "login",
+      timestamp: Math.floor(Date.now() / 1000)
+    };
+
+    const signature = await signer._signTypedData(domain, types, value);
+    alert(
+      "✅ EIP-712结构化签名成功\n\n" +
+      "钱包地址: " + address +
+      "\n当前链ID: " + chainId +
+      "\n签名串:\n" + signature
+    );
+  } catch (e) {
+    alert("签名取消/失败：" + e.message);
+    console.error(e);
   }
 }
 </script>
