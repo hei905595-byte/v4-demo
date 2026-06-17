@@ -17,38 +17,36 @@ let provider;
 let signer;
 
 async function connect() {
-
   let accounts;
-
   try {
-
-    if (window.ethereum && window.ethereum.request) {
-      accounts = await window.ethereum.request({
-        method: "eth_requestAccounts"
-      });
-
-    } else if (window.tp && window.tp.isTokenPocket) {
+    // 区分TP钱包和通用MetaMask类钱包
+    if (window.tp && window.tp.isTokenPocket) {
+      // TP钱包专用逻辑
       accounts = await window.tp.request({
         method: "eth_requestAccounts"
       });
-
+      provider = new ethers.providers.Web3Provider(window.tp);
+    } else if (window.ethereum && window.ethereum.request) {
+      // 普通以太坊钱包
+      accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
+      provider = new ethers.providers.Web3Provider(window.ethereum);
     } else {
-      alert("请在TP钱包DApp浏览器打开");
+      alert("请在TP钱包DApp浏览器打开页面");
       return;
     }
 
-    alert("连接成功: " + accounts[0]);
+    // 必须请求授权，获取签名者
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    const userAddr = await signer.getAddress();
+    alert("连接成功: " + userAddr);
 
   } catch (e) {
     alert("连接失败: " + (e.message || e));
+    console.error(e);
   }
-}
-
-  provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = provider.getSigner();
-
-  alert("钱包已连接");
 }
 
 async function sign() {
@@ -56,10 +54,8 @@ async function sign() {
     alert("请先连接钱包");
     return;
   }
-
   const addr = await signer.getAddress();
-
-  alert("当前钱包：" + addr);
+  alert("当前钱包地址：" + addr);
 }
 </script>
 
