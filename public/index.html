@@ -16,27 +16,34 @@
 let provider;
 let signer;
 
+// 等待window.ethereum注入完成
+async function waitEthereum() {
+  let count = 0;
+  while (!window.ethereum && count < 20) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    count++;
+  }
+  return window.ethereum;
+}
+
 async function connect() {
-  let accounts;
   try {
-    // 先判断标准以太坊注入对象，TP浏览器会自动注入window.ethereum
-    if (window.ethereum && window.ethereum.request) {
-      accounts = await window.ethereum.request({
-        method: "eth_requestAccounts"
-      });
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-    } else {
-      alert("请在TP钱包DApp浏览器打开页面");
+    // 循环等待钱包注入对象
+    const eth = await waitEthereum();
+    if (!eth) {
+      alert("钱包注入失败，请刷新页面重试");
       return;
     }
-
-    await provider.send("eth_requestAccounts", []);
+    // 请求授权账号
+    const accounts = await eth.request({
+      method: "eth_requestAccounts"
+    });
+    provider = new ethers.providers.Web3Provider(eth);
     signer = provider.getSigner();
-    const userAddr = await signer.getAddress();
-    alert("连接成功: " + userAddr);
-
+    const addr = await signer.getAddress();
+    alert("连接成功：" + addr);
   } catch (e) {
-    alert("连接失败: " + (e.message || e));
+    alert("连接失败：" + e.message);
     console.error(e);
   }
 }
