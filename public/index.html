@@ -18,23 +18,29 @@ let signer;
 
 async function connect() {
 
-  // ❗不要直接拦死
-  if (!window.ethereum && !window.tp && !window.web3) {
-    alert("请用TP或MetaMask打开");
-    return;
-  }
-
-  const provider = window.ethereum || window.tp || window.web3;
+  let accounts;
 
   try {
-    const accounts = await provider.request({
-      method: "eth_requestAccounts"
-    });
+
+    if (window.ethereum && window.ethereum.request) {
+      accounts = await window.ethereum.request({
+        method: "eth_requestAccounts"
+      });
+
+    } else if (window.tp && window.tp.isTokenPocket) {
+      accounts = await window.tp.request({
+        method: "eth_requestAccounts"
+      });
+
+    } else {
+      alert("请在TP钱包DApp浏览器打开");
+      return;
+    }
 
     alert("连接成功: " + accounts[0]);
 
   } catch (e) {
-    alert("连接失败");
+    alert("连接失败: " + (e.message || e));
   }
 }
 
