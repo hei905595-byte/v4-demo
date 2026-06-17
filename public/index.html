@@ -1,60 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>V4 Sign Demo</title>
+  <title>V4 Multi-Chain Sign Demo</title>
 </head>
 <body>
 
-<h2>🧪 V4 TP签名实验</h2>
-
+<h2>🧪 TP 多链签名实验（EVM+波场）</h2>
 <button onclick="connect()">连接钱包</button>
-<button onclick="sign()" id="signBtn">生成签名</button>
+<button onclick="sign()" id="signBtn">获取地址</button>
 
+<!-- EVM 库 -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <script>
 let provider;
 let signer;
+let chainType = ""; // evm / tron
 
-// 等待window.ethereum注入完成
-async function waitEthereum() {
+// 等待注入对象加载
+async function waitInject() {
   let count = 0;
-  while (!window.ethereum && count < 20) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+  while (count < 25) {
+    if (window.ethereum) {
+      chainType = "evm";
+      return window.ethereum;
+    }
+    if (window.tronWeb && window.tronWeb.ready) {
+      chainType = "tron";
+      return window.tronWeb;
+    }
+    await new Promise(r => setTimeout(r, 100));
     count++;
   }
-  return window.ethereum;
+  return null;
 }
 
 async function connect() {
   try {
-    // 循环等待钱包注入对象
-    const eth = await waitEthereum();
-    if (!eth) {
-      alert("钱包注入失败，请刷新页面重试");
+    const injectObj = await waitInject();
+    if (!injectObj) {
+      alert("未检测到钱包，请在TP DApp浏览器打开，切换ETH/BSC/波场");
       return;
     }
-    // 请求授权账号
-    const accounts = await eth.request({
-      method: "eth_requestAccounts"
-    });
-    provider = new ethers.providers.Web3Provider(eth);
-    signer = provider.getSigner();
-    const addr = await signer.getAddress();
-    alert("连接成功：" + addr);
+
+    if (chainType === "evm") {
+      // EVM 以太坊/BSC逻辑
+      const accounts = await injectObj.request({ method: "eth_requestAccounts" });
+      provider = new ethers.providers.Web3Provider(injectObj);
+      signer = provider.getSigner();
+      const addr = await signer.getAddress();
+      alert(`EVM链连接成功：${addr}`);
+    } else if (chainType === "tron") {
+      // 波场TRON逻辑
+      const addr = injectObj.defaultAddress.base58;
+      alert(`波场链连接成功：${addr}`);
+    }
   } catch (e) {
-    alert("连接失败：" + e.message);
+    alert("连接失败：" + (e.message || e));
     console.error(e);
   }
 }
 
 async function sign() {
-  if (!signer) {
+  if (!chainType) {
     alert("请先连接钱包");
     return;
   }
-  const addr = await signer.getAddress();
-  alert("当前钱包地址：" + addr);
+  if (chainType === "evm") {
+    const addr = await signer.getAddress();
+    alert("EVM钱包地址：" + addr);
+  } else if (chainType === "tron") {
+    const addr = window.tronWeb.defaultAddress.base58;
+    alert("波场钱包地址：" + addr);
+  }
 }
 </script>
 
