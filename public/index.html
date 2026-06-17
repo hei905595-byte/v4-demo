@@ -8,7 +8,7 @@
 <h2>🧪 V4 TP签名实验</h2>
 
 <button onclick="connect()">连接钱包</button>
-<button onclick="sign()">生成签名</button>
+<button onclick="sign()" id="signBtn">生成签名</button>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
@@ -16,49 +16,28 @@
 let provider;
 let signer;
 
-const contractAddress = "填你的合约地址";
-
 async function connect() {
+  if (!window.ethereum) {
+    alert("请用TP或MetaMask打开");
+    return;
+  }
+
   provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
-  alert("已连接TP钱包");
+
+  alert("钱包已连接");
 }
 
-// 🧠 核心：EIP-712签名（不发交易）
 async function sign() {
-  const owner = await signer.getAddress();
+  if (!signer) {
+    alert("请先连接钱包");
+    return;
+  }
 
-  const domain = {
-    name: "V4 Token",
-    version: "1",
-    chainId: 11155111, // Sepolia
-    verifyingContract: contractAddress
-  };
+  const addr = await signer.getAddress();
 
-  const types = {
-    Permit: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-      { name: "value", type: "uint256" },
-      { name: "nonce", type: "uint256" },
-      { name: "deadline", type: "uint256" }
-    ]
-  };
-
-  const value = {
-    owner: owner,
-    spender: contractAddress,
-    value: 1000,
-    nonce: 0,
-    deadline: Math.floor(Date.now()/1000) + 3600
-  };
-
-  const signature = await signer._signTypedData(domain, types, value);
-
-  console.log("签名结果:", signature);
-
-  alert("签名完成（看控制台）");
+  alert("当前钱包：" + addr);
 }
 </script>
 
