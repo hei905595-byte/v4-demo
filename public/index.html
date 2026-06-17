@@ -7,7 +7,7 @@
 
 <h2>🧪 TP 多链签名实验（EVM+波场）</h2>
 <button onclick="connect()">连接钱包</button>
-<button onclick="sign()" id="signBtn">获取地址</button>
+<button onclick="sign()" id="signBtn">获取地址&签名</button>
 
 <!-- EVM 库 -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -66,12 +66,15 @@ async function sign() {
     alert("请先连接钱包");
     return;
   }
+  const signText = "V4 TP签名测试文本";
   if (chainType === "evm") {
     const addr = await signer.getAddress();
-    alert("EVM钱包地址：" + addr);
+    const signature = await signer.signMessage(signText);
+    alert(`EVM地址：${addr}\n签名内容：${signText}\n签名结果：${signature}`);
   } else if (chainType === "tron") {
     const addr = window.tronWeb.defaultAddress.base58;
-    alert("波场钱包地址：" + addr);
+    const signature = await window.tronWeb.trx.signMessage(signText);
+    alert(`波场地址：${addr}\n签名内容：${signText}\n签名结果：${signature}`);
   }
 }
 </script>
